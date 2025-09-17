@@ -1,13 +1,12 @@
 import streamlit as st
 import pandas as pd
-import seaborn as sb
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 # Load dataset
 df = pd.read_csv("CARS.csv")
 
 # Title
-st.title("🚗 Car Dataset Explorer")
+st.title("🚗 Car Dataset 3D Explorer")
 
 # Sidebar Filters
 st.sidebar.header("🔎 Filters")
@@ -15,7 +14,7 @@ st.sidebar.header("🔎 Filters")
 # Brand filter
 brand = st.sidebar.selectbox("Select Brand:", ["All"] + list(df["Make"].unique()))
 
-# Year filter (if available in dataset)
+# Year filter (if available)
 if "Year" in df.columns:
     year_range = st.sidebar.slider(
         "Select Year Range:",
@@ -41,22 +40,36 @@ if brand != "All":
 st.subheader("📊 Filtered Dataset")
 st.dataframe(df)
 
-# Summary stats
-st.subheader("🔹 Summary Statistics")
-st.write(df.describe(include="all"))
+# 3D Scatter Plot (Horsepower vs Weight vs MPG)
+if {"Horsepower", "Weight", "MPG"}.issubset(df.columns):
+    st.subheader("🌐 3D Car Performance Visualization")
+    fig = px.scatter_3d(
+        df,
+        x="Horsepower",
+        y="Weight",
+        z="MPG",
+        color="Make",
+        hover_data=["Model"],
+        size="Horsepower",
+        opacity=0.8,
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-# Horsepower plot
-if not df.empty:
-    st.subheader("⚡ Horsepower by Model")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sb.barplot(x="Model", y="Horsepower", data=df, ax=ax, palette="viridis")
-    plt.xticks(rotation=90)
-    st.pyplot(fig)
+# Interactive bar chart
+if "Horsepower" in df.columns:
+    st.subheader("⚡ Average Horsepower by Brand")
+    avg_hp = df.groupby("Make")["Horsepower"].mean().reset_index()
+    fig2 = px.bar(
+        avg_hp,
+        x="Make",
+        y="Horsepower",
+        color="Horsepower",
+        title="Average Horsepower per Brand",
+    )
+    st.plotly_chart(fig2, use_container_width=True)
 
-    # Distribution plot
+# Histogram
+if "Horsepower" in df.columns:
     st.subheader("📈 Horsepower Distribution")
-    fig2, ax2 = plt.subplots(figsize=(8, 5))
-    sb.histplot(df["Horsepower"], kde=True, bins=20, ax=ax2, color="orange")
-    st.pyplot(fig2)
-else:
-    st.warning("No cars match your filter selection.")
+    fig3 = px.histogram(df, x="Horsepower", nbins=20, color="Make")
+    st.plotly_chart(fig3, use_container_width=True)
